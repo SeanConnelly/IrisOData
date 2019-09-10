@@ -18,7 +18,7 @@ The full project code and tests are provided in this Git repository. To install 
 
 ### A full explanation of the project can be found in this DC article
 
-<TODO: link>
+https://community.intersystems.com/post/creating-odata-api-adapter-intersystems-iris
 
 ### Running the tests
 
