@@ -1,28 +1,54 @@
-## Simple OData Client for IRIS
+# Simple OData Client for IRIS
 
-# Introduction
+### Introduction
 
 A simple IRIS client for conneting and consuming RESTful OData API services.
 
 Includes a number of example tests for implementing the OData TripPinWS service at www.odata.org
 
-# Motivation
+### Motivation
 
 IRIS includes a robust HTTP client for requesting and processing HTTP services.
 
 OData is a specification for building consistent RESTful API services. With a small amount of boiler plate code it is possible to extend the IRIS HTTP client with a number of helpful methods.
 
-# Installation
+### Installation
 
 The full project code and tests are provided in this Git repository. To install the code, import the DcLib_OData1.0.xml file found in the build folder.
 
-# A full explanation of the project can be found in this DC article
+### A full explanation of the project can be found in this DC article
 
 <TODO: link>
 
-# Running the tests
+### Running the tests
 
-*DC>d ##class(TripPinWS.Tests).TestGenericFetchAllUsingWithPeople()*
+```
+DC>d ##class(TripPinWS.Tests).TestGenericFetchAllUsingWithPeople()
+
+Russell Whyte
+Scott Ketchum
+Ronald Mundy
+Javier Alfred
+Willie Ashmore
+Vincent Calabrese
+Clyde Guess
+Keith Pinckney
+Marshall Garay
+Ryan Theriault
+Elaine Stewart
+Sallie Sampson
+Joni Rosales
+Georgina Barlow
+Angel Huffman
+Laurel Osborn
+Sandy Osborn
+Ursula Bright
+Genevieve Reeves
+Krista Kemp
+```
+ 
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllPeople()
  
 Russell Whyte
 Scott Ketchum
@@ -44,33 +70,10 @@ Sandy Osborn
 Ursula Bright
 Genevieve Reeves
 Krista Kemp
+```
 
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAllPeople()*
- 
-Russell Whyte
-Scott Ketchum
-Ronald Mundy
-Javier Alfred
-Willie Ashmore
-Vincent Calabrese
-Clyde Guess
-Keith Pinckney
-Marshall Garay
-Ryan Theriault
-Elaine Stewart
-Sallie Sampson
-Joni Rosales
-Georgina Barlow
-Angel Huffman
-Laurel Osborn
-Sandy Osborn
-Ursula Bright
-Genevieve Reeves
-Krista Kemp
-
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchPersonWithID()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchPersonWithID()
 
 {
   "@odata.context":"http://services.odata.org/V4/(S(jndgbgy2tbu1vjtzyoei2w3e))/TripPinServiceRW/$metadata#People/$entity",
@@ -97,9 +100,10 @@ Krista Kemp
   "Gender":"Male",
   "Concurrency":637037351471247805
 }
+```
 
-
-*DC>d ##class(TripPinWS.Tests).TestFetchAllAirlines()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllAirlines()
  
 AA American Airlines
 FM Shanghai Airline
@@ -118,7 +122,8 @@ HX Hong Kong Airlines
 EK Emirates
 
  
-*DC>d ##class(TripPinWS.Tests).TestFetchAllAirports()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllAirports()
  
 SFO San Francisco International Airport
 LAX Los Angeles International Airport
@@ -137,22 +142,26 @@ ATL Hartsfield-Jackson Atlanta International Airport
 SEA Seattle-Tacoma International Airport
 
  
-*DC>d ##class(TripPinWS.Tests).TestForError1()*
+```
+DC>d ##class(TripPinWS.Tests).TestForError1()
  
 Resource not found for the segment 'Peoples'.
-
+```
  
-*DC>d ##class(TripPinWS.Tests).TestForError2()*
+```
+DC>d ##class(TripPinWS.Tests).TestForError2()
  
 Entity ID must be provided
+``` 
  
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAllPeopleWithFilter()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllPeopleWithFilter()
  
 Ronald Mundy
+```
 
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAllPeopleWithSelect()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllPeopleWithSelect()
 
 russellwhyte
   Russell@example.com
@@ -229,9 +238,10 @@ genevievereeves
  
 kristakemp
   Krista@example.com
+```
 
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAllAirportsWithSearch()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllAirportsWithSearch()
  
 IataCode: KJFK
 Name:     John F. Kennedy International Airport
@@ -240,9 +250,10 @@ Address:  Jamaica, New York, NY 11430
           United States
 Coords    -73.7788888888889
           40.6397222222222
+```
 
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAllAirportsWithAndWithoutOrderBy()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAllAirportsWithAndWithoutOrderBy()
   
 Unordered...
 KSFO
@@ -277,9 +288,10 @@ YSSY
 ZBAA
 ZGGG
 ZSSS
+```
 
- 
-*DC>d ##class(TripPinWS.Tests).TestFetchAirportCount()*
+```
+DC>d ##class(TripPinWS.Tests).TestFetchAirportCount()
 
 Count of airports = 15
-
+```
