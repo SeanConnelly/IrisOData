@@ -1,0 +1,771 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="IRIS" version="26" zv="IRIS for Windows (x86-64) 2019.1 (Build 510U)" ts="2019-09-10 19:12:09">
+<Class name="DcLib.OData.Client">
+<Super>%RegisteredObject</Super>
+<TimeChanged>65237,50659.06713</TimeChanged>
+<TimeCreated>65220,84144.90214</TimeCreated>
+
+<Parameter name="BaseURL">
+</Parameter>
+
+<Parameter name="SSLConfiguration">
+</Parameter>
+
+<Parameter name="EntityName">
+</Parameter>
+
+<Property name="HttpRequest">
+<Type>%Net.HttpRequest</Type>
+</Property>
+
+<Property name="BaseURL">
+<Type>%String</Type>
+</Property>
+
+<Property name="EntityName">
+<Type>%String</Type>
+</Property>
+
+<Property name="Debug">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>pBaseURL:%String="",pSSLConfiguration:%String=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	set ..HttpRequest=##class(%Net.HttpRequest).%New()
+	set ..BaseURL=$select(pBaseURL'="":pBaseURL,1:..#BaseURL)
+	set ..EntityName=..#EntityName
+	set sslConfiguration=$select(pSSLConfiguration'="":pSSLConfiguration,1:..#SSLConfiguration)
+	if sslConfiguration'="" set ..HttpRequest.SSLConfiguration=sslConfiguration
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="DebugOn">
+<Implementation><![CDATA[
+	set ..Debug=1
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Select">
+<FormalSpec>pSelect:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$select",pSelect)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Filter">
+<FormalSpec>pFilter:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$filter",pFilter)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Search">
+<FormalSpec>pSearch:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$search",pSearch)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="OrderBy">
+<FormalSpec>pOrderBy:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$orderby",pOrderBy)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Top">
+<FormalSpec>pTop:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$top",pTop)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Skip">
+<FormalSpec>pSkip:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	do ..HttpRequest.SetParam("$skip",pSkip)
+	return $this
+]]></Implementation>
+</Method>
+
+<Method name="Fetch">
+<FormalSpec>pEntityId:%String=""</FormalSpec>
+<ReturnType>DcLib.OData.ClientResponse</ReturnType>
+<Implementation><![CDATA[
+	if pEntityId="" return ##class(DcLib.OData.ClientResponse).%New($$$ERROR($$$GeneralError,"Entity ID must be provided"),"")
+	set pEntityId="('"_pEntityId_"')"
+	if $extract(..BaseURL,*)'="/" set ..BaseURL=..BaseURL_"/"
+	set sc=..HttpRequest.Get(..BaseURL_..EntityName_pEntityId,..Debug)
+	set response=##class(DcLib.OData.ClientResponse).%New(sc,..HttpRequest.HttpResponse,"one")
+	quit response
+]]></Implementation>
+</Method>
+
+<Method name="FetchCount">
+<ReturnType>DcLib.OData.ClientResponse</ReturnType>
+<Implementation><![CDATA[
+	if $extract(..BaseURL,*)'="/" set ..BaseURL=..BaseURL_"/"
+	set sc=..HttpRequest.Get(..BaseURL_..EntityName_"/$count")
+	set response=##class(DcLib.OData.ClientResponse).%New(sc,..HttpRequest.HttpResponse,"count")
+	quit response
+]]></Implementation>
+</Method>
+
+<Method name="FetchAll">
+<ReturnType>DcLib.OData.ClientResponse</ReturnType>
+<Implementation><![CDATA[
+	#dim response As DcLib.OData.ClientResponse
+	if $extract(..BaseURL,*)'="/" set ..BaseURL=..BaseURL_"/"
+	set sc=..HttpRequest.Get(..BaseURL_..EntityName,..Debug)
+	set response=##class(DcLib.OData.ClientResponse).%New(sc,..HttpRequest.HttpResponse,"many")
+	if response.IsError() return response
+	//if the response has a nextLink then we need to keep going back to fetch more data
+	while response.Payload.%IsDefined("@odata.nextLink") {
+		//stash the previous value array, push the new values on to it and then
+		//set it back to the new response and create a new value iterator
+		set previousValueArray=response.Payload.value
+		set sc=..HttpRequest.Get(response.Payload."@odata.nextLink",..Debug)
+		set response=##class(DcLib.OData.ClientResponse).%New(sc,..HttpRequest.HttpResponse)
+		if response.IsError() return response
+		while response.Value.%GetNext(.key,.value) {
+			do previousValueArray.%Push(value)	
+		}
+		set response.Payload.value=previousValueArray
+		set response.Value=response.Payload.value.%GetIterator()
+	}
+	return response
+]]></Implementation>
+</Method>
+
+<Method name="With">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pEntityName:%String</FormalSpec>
+<ReturnType>DcLib.OData.Client</ReturnType>
+<Implementation><![CDATA[
+	set client=..%New()
+	set client.EntityName=pEntityName
+	return client
+]]></Implementation>
+</Method>
+</Class>
+
+
+<Class name="DcLib.OData.ClientResponse">
+<Super>%RegisteredObject</Super>
+<TimeChanged>65237,49874.308438</TimeChanged>
+<TimeCreated>65223,34740.168482</TimeCreated>
+
+<Property name="InternalStatus">
+<Type>%Status</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="HttpResponse">
+<Type>%Net.HttpResponse</Type>
+</Property>
+
+<Property name="Payload">
+<Type>%Library.DynamicObject</Type>
+</Property>
+
+<Property name="Value">
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>pRequestStatus:%Status,pHttpResponse:%Net.HttpResponse,pValueMode:%String=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	//check for immediate HTTP error
+	set ..InternalStatus = pRequestStatus
+	set ..HttpResponse = pHttpResponse
+	if $$$ISERR(pRequestStatus) {
+		if $SYSTEM.Status.GetOneErrorText(pRequestStatus)["<READ>" set ..InternalStatus=$$$ERROR($$$GeneralError,"Could not get a response from HTTP server, server could be uncontactable or server details are incorrect") 
+		return $$$OK
+	}
+	
+	//if mode is count, then the response is not JSON, its just a numeric value
+	//validate that it is a number and return all ok if true, else let it fall through
+	//to pick up any errors that are presented as JSON
+	if pValueMode="count" {
+		set value=pHttpResponse.Data.Read(32000)
+		if value?1.N {
+			set ..Value=value
+			return $$$OK
+		}
+	}
+	
+	//serialise JSON payload, catch any serialisation errors
+	try {
+		set ..Payload={}.%FromJSON(pHttpResponse.Data)	
+	} catch err {
+		//check for HTTP status code error first
+		if $e(pHttpResponse.StatusCode,1)'="2" {
+			set ..InternalStatus = $$$ERROR($$$GeneralError,"Unexpected HTTP Status Code "_pHttpResponse.StatusCode)
+			if pHttpResponse.Data.Size>0 return $$$OK
+		}
+		set ..InternalStatus=err.AsStatus()
+		return $$$OK
+	}
+	
+	//check payload for an OData error
+	if ..Payload.%IsDefined("error") {
+		do ..HttpResponse.Data.Rewind()
+		set error=..HttpResponse.Data.Read(32000)
+		set ..InternalStatus=$$$ERROR($$$GeneralError,..Payload.error.message)	
+		return $$$OK
+	}
+	
+	//all ok, set the response value to match the required modes (many, one, count)
+	if pValueMode="one" {
+		set ..Value=..Payload
+	} else {
+		set iterator=..Payload.value.%GetIterator()
+		set ..Value=iterator
+	}
+	
+	return $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="IsOK">
+<Implementation><![CDATA[	return $$$ISOK(..InternalStatus)
+]]></Implementation>
+</Method>
+
+<Method name="IsError">
+<Implementation><![CDATA[	return $$$ISERR(..InternalStatus)
+]]></Implementation>
+</Method>
+
+<Method name="GetStatus">
+<Implementation><![CDATA[	return ..InternalStatus
+]]></Implementation>
+</Method>
+
+<Method name="GetStatusText">
+<Implementation><![CDATA[	return $SYSTEM.Status.GetOneStatusText(..InternalStatus)
+]]></Implementation>
+</Method>
+
+<Method name="ThrowException">
+<Implementation><![CDATA[	Throw ##class(%Exception.General).%New("OData Fetch Exception","999",,$SYSTEM.Status.GetOneStatusText(..InternalStatus))
+]]></Implementation>
+</Method>
+
+<Method name="OutputToDevice">
+<Implementation><![CDATA[	do ..HttpResponse.OutputToDevice()
+]]></Implementation>
+</Method>
+</Class>
+
+
+
+
+<Project name="DcLib_OData" LastModified="2019-09-10 19:07:34.113238">
+  <Items>
+    <ProjectItem name="DcLib" type="PKG"></ProjectItem>
+    <ProjectItem name="TripPinWS" type="PKG"></ProjectItem>
+  </Items>
+</Project>
+
+
+<Class name="TripPinWS.Airlines">
+<Super>TripPinWS.Client</Super>
+<TimeChanged>65237,42265.346905</TimeChanged>
+<TimeCreated>65225,48676.372177</TimeCreated>
+
+<Parameter name="EntityName">
+<Default>Airlines</Default>
+</Parameter>
+</Class>
+
+
+<Class name="TripPinWS.Airports">
+<Super>TripPinWS.Client</Super>
+<TimeChanged>65237,43293.141469</TimeChanged>
+<TimeCreated>65225,48676.372177</TimeCreated>
+
+<Parameter name="EntityName">
+<Default>Airports</Default>
+</Parameter>
+</Class>
+
+
+<Class name="TripPinWS.Client">
+<Super>DcLib.OData.Client</Super>
+<TimeChanged>65237,41445.521962</TimeChanged>
+<TimeCreated>65225,48352.515347</TimeCreated>
+
+<Parameter name="BaseURL">
+<Default>https://services.odata.org:443/V4/(S(jndgbgy2tbu1vjtzyoei2w3e))/TripPinServiceRW</Default>
+</Parameter>
+
+<Parameter name="SSLConfiguration">
+<Default>odata_org</Default>
+</Parameter>
+</Class>
+
+
+<Class name="TripPinWS.Model.Address">
+<Super>%Persistent,%JSON.Adaptor</Super>
+<TimeChanged>65237,56006.558008</TimeChanged>
+<TimeCreated>65237,51847.482849</TimeCreated>
+
+<Property name="Address">
+<Type>%String</Type>
+</Property>
+
+<Property name="City">
+<Type>TripPinWS.Model.City</Type>
+</Property>
+
+<Property name="Person">
+<Type>Person</Type>
+<Cardinality>one</Cardinality>
+<Inverse>AddressInfo</Inverse>
+<Relationship>1</Relationship>
+</Property>
+
+<Storage name="Default">
+<Type>%Storage.Persistent</Type>
+<DataLocation>^TripPinWS.Model.AddressD</DataLocation>
+<DefaultData>AddressDefaultData</DefaultData>
+<IdLocation>^TripPinWS.Model.AddressD</IdLocation>
+<IndexLocation>^TripPinWS.Model.AddressI</IndexLocation>
+<State>AddressState</State>
+<StreamLocation>^TripPinWS.Model.AddressS</StreamLocation>
+<Data name="AddressDefaultData">
+<Structure>listnode</Structure>
+<Subscript>"1"</Subscript>
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+</Data>
+<Data name="AddressState">
+<Value name="1">
+<Value>Address</Value>
+</Value>
+<Value name="2">
+<Value>City</Value>
+</Value>
+<Value name="3">
+<Value>Person</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+
+
+<Class name="TripPinWS.Model.City">
+<Super>%Persistent,%JSON.Adaptor</Super>
+<TimeChanged>65237,56004.239434</TimeChanged>
+<TimeCreated>65237,51847.482849</TimeCreated>
+
+<Property name="CountryRegion">
+<Type>%String</Type>
+</Property>
+
+<Property name="Name">
+<Type>%String</Type>
+</Property>
+
+<Property name="Region">
+<Type>%String</Type>
+</Property>
+
+<Storage name="Default">
+<Type>%Storage.Persistent</Type>
+<DataLocation>^TripPinWS.Model.CityD</DataLocation>
+<DefaultData>CityDefaultData</DefaultData>
+<IdLocation>^TripPinWS.Model.CityD</IdLocation>
+<IndexLocation>^TripPinWS.Model.CityI</IndexLocation>
+<State>CityState</State>
+<StreamLocation>^TripPinWS.Model.CityS</StreamLocation>
+<Data name="CityDefaultData">
+<Structure>listnode</Structure>
+<Subscript>"1"</Subscript>
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+</Data>
+<Data name="CityState">
+<Value name="1">
+<Value>CountryRegion</Value>
+</Value>
+<Value name="2">
+<Value>Name</Value>
+</Value>
+<Value name="3">
+<Value>Region</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+
+
+<Class name="TripPinWS.Model.Person">
+<Super>%Persistent,%JSON.Adaptor</Super>
+<TimeChanged>65237,58036.810974</TimeChanged>
+<TimeCreated>65237,51847.482849</TimeCreated>
+
+<Parameter name="%JSONIGNOREINVALIDFIELD">
+<Default>1</Default>
+</Parameter>
+
+<Property name="UserName">
+<Type>%String</Type>
+</Property>
+
+<Property name="FirstName">
+<Type>%String</Type>
+</Property>
+
+<Property name="LastName">
+<Type>%String</Type>
+</Property>
+
+<Property name="Emails">
+<Type>%String</Type>
+<Collection>list</Collection>
+</Property>
+
+<Property name="Gender">
+<Type>%String</Type>
+</Property>
+
+<Property name="Concurrency">
+<Type>%Integer</Type>
+</Property>
+
+<Property name="AddressInfo">
+<Type>Address</Type>
+<Cardinality>many</Cardinality>
+<Inverse>Person</Inverse>
+<Relationship>1</Relationship>
+</Property>
+
+<Index name="UserNameIndex">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>UserName</Properties>
+<Unique>1</Unique>
+</Index>
+
+<Storage name="Default">
+<Type>%Storage.Persistent</Type>
+<DataLocation>^TripPinWS.Model.PersonD</DataLocation>
+<DefaultData>PersonDefaultData</DefaultData>
+<IdLocation>^TripPinWS.Model.PersonD</IdLocation>
+<IndexLocation>^TripPinWS.Model.PersonI</IndexLocation>
+<StreamLocation>^TripPinWS.Model.PersonS</StreamLocation>
+<Data name="PersonDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>UserName</Value>
+</Value>
+<Value name="3">
+<Value>FirstName</Value>
+</Value>
+<Value name="4">
+<Value>LastName</Value>
+</Value>
+<Value name="5">
+<Value>Emails</Value>
+</Value>
+<Value name="6">
+<Value>Gender</Value>
+</Value>
+<Value name="7">
+<Value>Concurrency</Value>
+</Value>
+<Value name="8">
+<Value>AddressInfo</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+
+
+
+
+<Class name="TripPinWS.People">
+<Super>TripPinWS.Client</Super>
+<TimeChanged>65237,42217.618152</TimeChanged>
+<TimeCreated>65225,48676.372177</TimeCreated>
+
+<Parameter name="EntityName">
+<Default>People</Default>
+</Parameter>
+</Class>
+
+
+<Class name="TripPinWS.Tests">
+<Super>%RegisteredObject</Super>
+<TimeChanged>65237,57952.040837</TimeChanged>
+<TimeCreated>65237,41427.859779</TimeCreated>
+
+<Method name="TestGenericFetchAllUsingWithPeople">
+<Description>
+Fetch all with "People" entity using the base client class and .With("People")</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim response As DcLib.OData.ClientResponse
+	set response=##class(TripPinWS.Client).With("People").FetchAll()
+	
+	if response.IsError() write !,response.GetStatusText() quit
+	
+	while response.Value.%GetNext(.key,.person) {
+		write !,person.FirstName," ",person.LastName	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllPeople">
+<Description>
+Fetch all "People" entity using the People class</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim people As DcLib.OData.ClientResponse
+	set people=##class(TripPinWS.People).%New().FetchAll()
+	
+	if people.IsError() write !,people.GetStatusText() quit
+	
+	while people.Value.%GetNext(.key,.person) {
+		write !,person.FirstName," ",person.LastName	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchPersonWithID">
+<Description>
+Fetch single "People" entity using the persons ID</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim response As DcLib.OData.ClientResponse
+	set response=##class(TripPinWS.People).%New().Fetch("russellwhyte")
+	
+	if response.IsError() write !,response.GetStatusText() quit
+	
+	//lets use the new formatter to pretty print to the output (latest version of IRIS only)
+	set jsonFormatter = ##class(%JSON.Formatter).%New()
+	do jsonFormatter.Format(response.Value)
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllAirlines">
+<Description>
+Fetch all "Airlines"</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim airlines As DcLib.OData.ClientResponse
+	set airlines=##class(TripPinWS.Airlines).%New().FetchAll()
+	
+	if airlines.IsError() write !,airlines.GetStatusText() quit
+	
+	while airlines.Value.%GetNext(.key,.airline) {
+		write !,airline.AirlineCode," ",airline.Name	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllAirports">
+<Description>
+Fetch all "Airports"</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim airports As DcLib.OData.ClientResponse
+	set airports=##class(TripPinWS.Airports).%New().FetchAll()
+	
+	if airports.IsError() write !,airports.GetStatusText() quit
+	
+	while airports.Value.%GetNext(.key,.airport) {
+		write !,airport.IataCode," ",airport.Name	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestForError1">
+<Description>
+Should raise an intentional error, the entity "Peoples" should be "People"
+Error should be: Resource not found for the segment 'Peoples'.</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim people As DcLib.OData.ClientResponse
+	set people=##class(TripPinWS.Client).With("Peoples").FetchAll()
+	
+	if people.IsError() write !,people.GetStatusText() quit
+]]></Implementation>
+</Method>
+
+<Method name="TestForError2">
+<Description>
+Should raise an intentiional error, Fetch expects an ID
+Error should be: Entity ID must be provided</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim people As DcLib.OData.ClientResponse
+	set people=##class(TripPinWS.Client).With("Peoples").Fetch()
+	
+	if people.IsError() write !,people.GetStatusText() quit
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllPeopleWithFilter">
+<Description>
+Use .Filter() to fetch all People</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim people As DcLib.OData.ClientResponse
+	set people=##class(TripPinWS.People).%New().Filter("UserName eq 'ronaldmundy'").FetchAll()
+	
+	if people.IsError() write !,people.GetStatusText() quit
+	
+	while people.Value.%GetNext(.key,.person) {
+		write !,person.FirstName," ",person.LastName	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllPeopleWithSelect">
+<Description>
+Only .Select() UserName and Emails of all users</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim people As DcLib.OData.ClientResponse
+	set people=##class(TripPinWS.People).%New().Select("UserName,Emails").FetchAll()
+	
+	if people.IsError() write !,people.GetStatusText() quit
+	
+	while people.Value.%GetNext(.key,.person) {
+		write !!,person.UserName
+		set emails=person.Emails.%GetIterator()
+		while emails.%GetNext(.key2,.email) {
+			write !,"  ",email	
+		}
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllAirportsWithSearch">
+<Description>
+Use .Search() to fetch all airpots that include the word "Kennedy" anywhere in the data</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim airports As DcLib.OData.ClientResponse
+	set airports=##class(TripPinWS.Airports).%New().Search("Kennedy").FetchAll()
+	
+	if airports.IsError() write !,airports.GetStatusText() quit
+	
+	while airports.Value.%GetNext(.key,.airport) {
+		write !,"IataCode: ",airport.IcaoCode
+		write !,"Name:     ",airport.Name
+		write !,"Address:  ",airport.Location.Address
+		write !,"          ",airport.Location.City.Name
+		write !,"          ",airport.Location.City.CountryRegion
+		write !,"Coords    ",airport.Location.Loc.coordinates.%Get(0)
+		write !,"          ",airport.Location.Loc.coordinates.%Get(1)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAllAirportsWithAndWithoutOrderBy">
+<Description>
+Fetch all airports using order by</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	set airportClient=##class(TripPinWS.Airports).%New()
+	
+	#dim airports As DcLib.OData.ClientResponse
+	set airports=airportClient.FetchAll()
+	
+	write !!,"Unordered..."
+	
+	while airports.Value.%GetNext(.key,.airport) {
+		write !,airport.IcaoCode	
+	}
+	
+	write !!,"Ordered..."
+	
+	set airports=airportClient.OrderBy("IcaoCode").FetchAll()
+	while airports.Value.%GetNext(.key,.airport) {
+		write !,airport.IcaoCode	
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestFetchAirportCount">
+<Description>
+Fetch total count of airports only</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim airports As DcLib.OData.ClientResponse
+	set airports=##class(TripPinWS.Airports).%New().FetchCount()
+
+	if airports.IsError() write !,airports.GetStatusText() quit
+	
+	write "Count of airports = ",airports.Value
+]]></Implementation>
+</Method>
+
+<Method name="TestPersonModel">
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim response As DcLib.OData.ClientResponse
+	set response=##class(TripPinWS.People).%New().Fetch("russellwhyte")
+	
+	if response.IsError() write !,response.GetStatusText() quit
+	
+	set person=##class(TripPinWS.Model.Person).%New()
+	
+	set sc=person.%JSONImport(response.Value)
+	if $$$ISERR(sc) write !!,$SYSTEM.Status.GetOneErrorText(sc) return
+	
+	set sc=person.%Save()
+	if $$$ISERR(sc) write !!,$SYSTEM.Status.GetOneErrorText(sc) return
+]]></Implementation>
+</Method>
+
+<Method name="TestPersonModel2">
+<Description>
+This person has two address</Description>
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	#dim response As DcLib.OData.ClientResponse
+	set response=##class(TripPinWS.People).%New().Fetch("salliesampson")
+	
+	if response.IsError() write !,response.GetStatusText() quit
+	
+	set person=##class(TripPinWS.Model.Person).%New()
+	
+	set sc=person.%JSONImport(response.Value)
+	if $$$ISERR(sc) write !!,$SYSTEM.Status.GetOneErrorText(sc) return
+	
+	set sc=person.%Save()
+	if $$$ISERR(sc) write !!,$SYSTEM.Status.GetOneErrorText(sc) return
+]]></Implementation>
+</Method>
+</Class>
+</Export>
