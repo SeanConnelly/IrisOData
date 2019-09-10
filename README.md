@@ -14,7 +14,7 @@ OData is a specification for building consistent RESTful API services. With a sm
 
 ### Installation
 
-The full project code and tests are provided in this Git repository. To install the code, import the DcLib_OData1.0.xml file found in the build folder.
+The full project code and tests are provided in this Git repository. To install the code, import the **DcLib_OData1.0.xml** file found in the build folder.
 
 ### A full explanation of the project can be found in this DC article
 
